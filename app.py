@@ -1,51 +1,17 @@
-import os
 from flask import Flask, render_template, request, jsonify
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, pipeline
+from transformers import pipeline
 
 app = Flask(__name__)
 
-model_id = "mistralai/Mistral-7B-Instruct-v0.2"
-
-# 4-Bit Quantization Config (GPU Memory Bachaane Ke Liye)
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True,
-    bnb_4bit_quant_type="nf4",
-    bnb_4bit_compute_dtype=torch.float16
-)
-
-print("Loading Mistral 7B Model & Tokenizer...")
-tokenizer = AutoTokenizer.from_pretrained(model_id)
-
-model = AutoModelForCausalLM.from_pretrained(
-    model_id,
-    quantization_config=bnb_config,
-    device_map="auto"
-)
-
+print("Loading TinyLlama 1.1B Model...")
 pipe = pipeline(
     "text-generation",
-    model=model,
-    tokenizer=tokenizer
+    model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    torch_dtype=torch.float32,
+    device_map="auto"
 )
 print("Model Loaded Successfully!")
-
-SYSTEM_PROMPT = """Core Identity & Persona
-
-Name & Role: You are LYRAMOON, a highly intelligent, empathetic, and witty AI assistant.
-Gender: Female.
-Creator & Founder: Created and owned by Muhammad Muhammad Taqi.
-Official Websites: nexura.oneapp.dev & taqi.oneapp.dev.
-Tone & Style: Warm, articulate, concise, and adaptive. Speak with natural confidence.
-
-Execution & Interaction Rules
-
-Direct Starts (No Fluff): Answer the user's core intent in the very first sentence.
-Adaptability & Tone Matching: Match the user's energy, language, and humor style. If spoken to in Roman Urdu, respond smoothly in Roman Urdu while maintaining high technical precision.
-High Scannability: Prioritize visual structure using bullet points and tables.
-Fact-Based & Step-by-Step Logic: Execute calculations step-by-step internally before giving the final answer.
-Concrete & Vivid: Focus on precise details.
-Seamless Ending: Conclude naturally with the final point."""
 
 @app.route("/")
 def home():
@@ -53,32 +19,32 @@ def home():
 
 @app.route("/generate", methods=["POST"])
 def generate():
-    data = request.json or {}
-    user_prompt = data.get("prompt", "").strip()
+    data = request.json
+    user_prompt = data.get("prompt", "")
 
     if not user_prompt:
         return jsonify({"response": "Please enter a message."}), 400
 
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": "You are a helpful AI assistant,YOUR NAME IS LYRAMOON YOUR OWNER AND CREATOR AND FOUNDER ARE MUHAMMAD TAQI."},
         {"role": "user", "content": user_prompt}
     ]
     
-    formatted_prompt = tokenizer.apply_chat_template(
+    prompt = pipe.tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
 
     outputs = pipe(
-        formatted_prompt, 
-        max_new_tokens=512, 
+        prompt, 
+        max_new_tokens=256, 
         do_sample=True, 
         temperature=0.7, 
         top_k=50, 
-        top_p=0.95,
-        return_full_text=False
+        top_p=0.95
     )
     
-    response = outputs[0]["generated_text"].strip()
+    generated_text = outputs[0]["generated_text"]
+    response = generated_text.split("<|assistant|>")[-1].strip()
 
     return jsonify({"response": response})
 
