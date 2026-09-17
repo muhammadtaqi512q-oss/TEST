@@ -2,6 +2,3 @@ flask
 torch
 transformers
 accelerate
-bitsandbytes
-scipy
-huggingface_hub
