@@ -1,14 +1,6 @@
-App Name: MT
-Emojis: 😍
-Created by: Muhammad Taqi
-Website: https://nexura.oneapp.dev/
-
----
-
-To build this Android app:
-1. Open this folder in Android Studio
-2. Wait for Gradle sync to complete
-3. Click Build > Build Bundle(s) / APK(s) > Build APK(s)
-4. Find your APK in app/build/outputs/apk/debug/
-
-Or use the provided index.html to preview in any browser.
+flask
+torch
+transformers
+accelerate
+bitsandbytes
+scipy
