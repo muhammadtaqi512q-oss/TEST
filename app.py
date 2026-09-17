@@ -1,20 +1,32 @@
+import os
 from flask import Flask, render_template, request, jsonify
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, pipeline
 
 app = Flask(__name__)
 
 model_id = "mistralai/Mistral-7B-Instruct-v0.2"
 
-print("Loading Mistral 7B Model...")
+# 4-Bit Quantization Config (GPU Memory Bachaane Ke Liye)
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.float16
+)
+
+print("Loading Mistral 7B Model & Tokenizer...")
 tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    quantization_config=bnb_config,
+    device_map="auto"
+)
 
 pipe = pipeline(
     "text-generation",
-    model=model_id,
-    torch_dtype=torch.float16,
-    device_map="auto",
-    model_kwargs={"load_in_4bit": True}  # RAM/VRAM kam use karne ke liye
+    model=model,
+    tokenizer=tokenizer
 )
 print("Model Loaded Successfully!")
 
@@ -52,7 +64,7 @@ def generate():
         {"role": "user", "content": user_prompt}
     ]
     
-    formatted_prompt = pipe.tokenizer.apply_chat_template(
+    formatted_prompt = tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True
     )
 
