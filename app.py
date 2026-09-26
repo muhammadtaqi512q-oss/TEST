@@ -7,7 +7,7 @@ app = Flask(__name__)
 print("Loading Qwen1.5 0.5B Chat Model...")
 pipe = pipeline(
     "text-generation",
-    model="Qwen/Qwen1.5-0.5B-Chat",
+    model="muhammad-taqi512/LYRA",
     torch_dtype=torch.float32,
     device_map="auto"
 )
